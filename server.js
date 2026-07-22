@@ -252,6 +252,124 @@ async function readBody(request) {
   return body ? JSON.parse(body) : {};
 }
 
+async function readBuffer(request, maxBytes = 8 * 1024 * 1024) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) {
+      const error = new Error("Audio recording is too large. Please keep it short.");
+      error.status = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function parseMultipartAudio(request, body) {
+  const contentType = request.headers["content-type"] || "";
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  if (!boundaryMatch) {
+    const error = new Error("Audio upload is missing a multipart boundary.");
+    error.status = 400;
+    throw error;
+  }
+
+  const boundary = Buffer.from(`--${boundaryMatch[1] || boundaryMatch[2]}`);
+  const parts = [];
+  let position = 0;
+
+  while (position < body.length) {
+    const boundaryStart = body.indexOf(boundary, position);
+    if (boundaryStart === -1) break;
+    const partStart = boundaryStart + boundary.length;
+    if (body.slice(partStart, partStart + 2).toString() === "--") break;
+    const headerStart = partStart + 2;
+    const headerEnd = body.indexOf(Buffer.from("\r\n\r\n"), headerStart);
+    if (headerEnd === -1) break;
+    const nextBoundary = body.indexOf(boundary, headerEnd + 4);
+    if (nextBoundary === -1) break;
+    const headers = body.slice(headerStart, headerEnd).toString("utf8");
+    const content = body.slice(headerEnd + 4, nextBoundary - 2);
+    parts.push({ headers, content });
+    position = nextBoundary;
+  }
+
+  const fields = {};
+  let audio = null;
+
+  parts.forEach((part) => {
+    const name = part.headers.match(/name="([^"]+)"/i)?.[1];
+    if (!name) return;
+    if (name === "audio") {
+      audio = {
+        buffer: part.content,
+        type: part.headers.match(/content-type:\s*([^\r\n]+)/i)?.[1] || "audio/webm",
+      };
+      return;
+    }
+    fields[name] = part.content.toString("utf8").trim();
+  });
+
+  if (!audio || audio.buffer.length === 0) {
+    const error = new Error("No audio recording was received.");
+    error.status = 400;
+    throw error;
+  }
+
+  return { audio, fields };
+}
+
+function transcriptionLanguage(value) {
+  if (value === "en-US") return "en";
+  if (value === "zh-HK" || value === "zh-CN") return "zh";
+  return "en";
+}
+
+async function transcribeAudio(request) {
+  if (!process.env.OPENAI_API_KEY) {
+    const error = new Error("OPENAI_API_KEY is not set on this server.");
+    error.status = 503;
+    throw error;
+  }
+
+  const { audio, fields } = parseMultipartAudio(request, await readBuffer(request));
+  const language = transcriptionLanguage(fields.language);
+  const form = new FormData();
+  const file = new Blob([audio.buffer], { type: audio.type });
+  form.append("file", file, "question.webm");
+  form.append("model", process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe");
+  form.append("language", language);
+  form.append(
+    "prompt",
+    language === "zh"
+      ? "Hong Kong Cantonese cruise questions about dining, show times, ship venues, ports, activities, and the Cruise Compass."
+      : "Cruise questions about dining, show times, ship venues, ports, activities, and the Cruise Compass."
+  );
+
+  const apiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: form,
+  });
+
+  const payload = await apiResponse.json().catch(() => ({}));
+  if (!apiResponse.ok) {
+    const error = new Error(payload.error?.message || "OpenAI transcription failed.");
+    error.status = apiResponse.status;
+    throw error;
+  }
+
+  return {
+    text: String(payload.text || "").trim(),
+    language,
+    model: process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe",
+  };
+}
+
 async function askOpenAI(question) {
   if (!process.env.OPENAI_API_KEY) {
     const error = new Error("OPENAI_API_KEY is not set on this server.");
@@ -359,6 +477,20 @@ const server = createServer(async (request, response) => {
         return;
       }
       sendJson(response, 200, await askOpenAI(trimmed));
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/api/transcribe") {
+      if (!isAuthenticated(request)) {
+        sendJson(response, 401, { error: "Please log in first." });
+        return;
+      }
+      const transcript = await transcribeAudio(request);
+      if (!transcript.text) {
+        sendJson(response, 422, { error: "I could not hear a question. Please try again." });
+        return;
+      }
+      sendJson(response, 200, transcript);
       return;
     }
 

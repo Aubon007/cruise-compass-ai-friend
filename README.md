@@ -18,5 +18,7 @@ AI-powered voice question answering for the Odyssey of the Seas 7-night Greek Is
 - Environment variable: `AUTH_EMAIL`
 - Environment variable: `AUTH_PIN`
 - Optional environment variable: `OPENAI_MODEL`
+- Optional environment variable: `OPENAI_TRANSCRIBE_MODEL`
 
 The default model is `gpt-5.6-sol`, based on the current OpenAI model resolver available in this Codex workspace.
+The default voice transcription model is `gpt-4o-transcribe`.
