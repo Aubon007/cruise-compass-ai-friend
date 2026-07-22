@@ -103,6 +103,8 @@ function scoreChunk(chunk, query, terms) {
 
   if (compactQuery.length > 5 && text.includes(compactQuery)) score += 18;
   if (text.includes("daily planner")) score += 2;
+  if (text.includes("breakfast dining info") && terms.includes("breakfast")) score += 12;
+  if (text.includes("time") && terms.includes("breakfast")) score += 4;
   if (text.includes("dining") && terms.some((term) => ["breakfast", "lunch", "dinner", "dining"].includes(term))) {
     score += 5;
   }
@@ -156,13 +158,14 @@ async function askOpenAI(question) {
 
   const sources = topContext(question);
   const context = sources
-    .map((source) => `Page ${source.page}: ${source.text}`)
+    .map((source) => `PDF_PAGE_${source.page}\n${source.text}`)
     .join("\n\n");
 
   const prompt = [
     "You are a helpful cruise companion for a passenger using the Odyssey of the Seas Cruise Compass.",
     "Answer only from the provided OCR context. If the context is unclear or missing, say you could not find that in the Cruise Compass.",
-    "Keep answers short, practical, and phone-friendly. Include page references in parentheses, such as (page 4).",
+    "Keep answers short, practical, and phone-friendly.",
+    "Cite only PDF page labels that appear in the context, such as (PDF page 4). Never treat deck numbers, venue numbers, or times as page numbers.",
     "",
     `Question: ${question}`,
     "",
