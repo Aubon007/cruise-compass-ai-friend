@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cruise Compass AI Friend</title>
+  <style>
+    :root{--background:#f3f7f4;--foreground:#17242a;--panel:#fffdf7;--ink-soft:#52636b;--teal:#047d86;--teal-dark:#035d66;--coral:#d65a42;--sun:#f2bd4b;--line:#d9d0c1;--mint:#ddf3e5}*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,rgba(4,125,134,.14),transparent 34%),linear-gradient(315deg,rgba(242,189,75,.2),transparent 34%),var(--background);color:var(--foreground);font-family:Arial,Helvetica,sans-serif}.app-shell{min-height:100vh;display:grid;place-items:center;padding:24px}.phone-panel{width:min(100%,430px);min-height:min(880px,calc(100vh - 48px));display:flex;flex-direction:column;gap:18px;padding:22px;border:1px solid rgba(23,36,42,.14);border-radius:28px;background:color-mix(in srgb,var(--panel) 94%,white);box-shadow:0 24px 80px rgba(23,36,42,.18)}.top-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.eyebrow,.answer-label,.sources>p{margin:0;color:var(--teal-dark);font-size:.78rem;font-weight:800;letter-spacing:0;text-transform:uppercase}h1,h2,p{overflow-wrap:anywhere}h1{margin:4px 0 0;font-size:clamp(2rem,12vw,3.2rem);line-height:.95}.trip-chip{flex:0 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:white;color:var(--ink-soft);font-size:.8rem;font-weight:700}.ai-chip{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:7px 9px;border-radius:999px;background:var(--mint);color:#245b34;font-size:.78rem;font-weight:800}.ask-zone{display:grid;place-items:center;gap:12px;padding:20px 10px 12px}.voice-button{width:168px;aspect-ratio:1;display:grid;place-items:center;gap:8px;border:0;border-radius:50%;background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.78),transparent 26%),linear-gradient(150deg,var(--teal),var(--teal-dark));color:white;font-size:1.28rem;font-weight:900;box-shadow:0 18px 36px rgba(4,125,134,.32);cursor:pointer}.voice-button.listening{background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.7),transparent 26%),linear-gradient(150deg,var(--coral),#9f3d2f);animation:listenPulse 1.1s ease-in-out infinite}.voice-button.thinking{background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.75),transparent 26%),linear-gradient(150deg,#6f6bb8,#37357d)}.voice-dot{width:36px;height:36px;border-radius:50%;background:linear-gradient(90deg,white 8px,transparent 8px 14px,white 14px 22px,transparent 22px 28px,white 28px),rgba(255,255,255,.18)}.voice-status{min-height:42px;margin:0;color:var(--ink-soft);text-align:center;font-size:.95rem;line-height:1.35}.search-form{display:grid;gap:8px}.search-form label{color:var(--ink-soft);font-size:.86rem;font-weight:800}.input-row{display:grid;grid-template-columns:1fr auto;gap:8px}input,button{font:inherit}.input-row input{min-width:0;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--foreground);outline:none}.input-row input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(4,125,134,.14)}.input-row button,.quick-grid button{border:1px solid rgba(4,125,134,.18);border-radius:8px;background:#eaf7f5;color:var(--teal-dark);font-weight:850;cursor:pointer}.input-row button{min-width:64px;height:48px;padding:0 14px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-grid button{min-height:44px;padding:8px 10px;text-align:left;font-size:.84rem;line-height:1.15}.answer-area{flex:1;min-height:230px;display:flex}.loading,.empty-state,.answer-card{width:100%;border:1px solid var(--line);border-radius:8px;background:white}.loading{display:grid;place-items:center;margin:0;padding:24px;color:var(--ink-soft);text-align:center}.empty-state{display:grid;align-content:center;gap:8px;padding:22px}.empty-state h2,.answer-card h2{margin:0;font-size:1.18rem;line-height:1.2}.empty-state p{margin:0;color:var(--ink-soft);line-height:1.45}.answer-card{display:grid;align-content:start;gap:12px;padding:18px}.answer-text{margin:0;color:#273940;line-height:1.48;white-space:pre-wrap}.sources{display:grid;gap:8px;padding-top:6px}.sources article{display:grid;gap:4px;padding:10px;border-left:4px solid var(--sun);border-radius:6px;background:#fff7df}.sources strong{color:#7a4516;font-size:.82rem}.sources span{color:#3f4c50;font-size:.86rem;line-height:1.35}.error{border-color:#e2a7a1;background:#fff3f1}.error .answer-label{color:#9f3d2f}@keyframes listenPulse{0%,100%{transform:scale(1);box-shadow:0 18px 36px rgba(214,90,66,.28)}50%{transform:scale(1.04);box-shadow:0 22px 52px rgba(214,90,66,.42)}}@media(max-width:460px){.app-shell{padding:0;place-items:stretch}.phone-panel{width:100%;min-height:100vh;border:0;border-radius:0;box-shadow:none}.top-bar{flex-direction:column}.trip-chip{align-self:flex-start}}
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <section class="phone-panel" aria-label="Cruise Compass AI voice search">
+      <div class="top-bar">
+        <div>
+          <p class="eyebrow">Odyssey of the Seas</p>
+          <h1>Cruise Compass AI Friend</h1>
+          <span class="ai-chip">AI answers from your PDF</span>
+        </div>
+        <div class="trip-chip">May 17, 2026</div>
+      </div>
+      <div class="ask-zone">
+        <button id="voiceButton" class="voice-button" type="button" aria-label="Start voice search">
+          <span class="voice-dot" aria-hidden="true"></span>
+          <span id="voiceButtonText">Voice</span>
+        </button>
+        <p id="voiceStatus" class="voice-status">Tap Voice and ask about the Cruise Compass.</p>
+      </div>
+      <form id="searchForm" class="search-form">
+        <label for="question">Ask the AI from the PDF</label>
+        <div class="input-row">
+          <input id="question" placeholder="Example: What time is breakfast?" autocomplete="off" />
+          <button id="askButton" type="submit">Ask</button>
+        </div>
+      </form>
+      <div id="quickGrid" class="quick-grid" aria-label="Quick questions"></div>
+      <section id="answerArea" class="answer-area" aria-live="polite">
+        <div class="empty-state">
+          <h2>Ready for your question</h2>
+          <p>The AI will read the most relevant OCR text from the 42-page Cruise Compass and answer with page references.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script>
+    const quickQuestions=["What is happening tonight?","What time is breakfast?","Where are the shows?","What are the dining hours?","What can kids do today?","When is the casino open?"];
+    let recognition=null,isListening=false,isThinking=false;
+    const qs=(id)=>document.getElementById(id);
+    function escapeHtml(value){return String(value).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+    function setThinking(value){isThinking=value;qs("voiceButton").classList.toggle("thinking",value);qs("voiceButtonText").textContent=value?"AI":"Voice";qs("askButton").disabled=value}
+    function setListening(value){isListening=value;qs("voiceButton").classList.toggle("listening",value);if(!isThinking)qs("voiceButtonText").textContent=value?"Listening":"Voice";qs("voiceButton").setAttribute("aria-label",value?"Stop listening":"Start voice search")}
+    function renderAnswer(question,payload){qs("answerArea").innerHTML=`<div class="answer-card"><p class="answer-label">AI answer from the PDF</p><h2>${escapeHtml(question)}</h2><p class="answer-text">${escapeHtml(payload.answer||"I could not find that in the Cruise Compass.")}</p>${payload.sources&&payload.sources.length?`<div class="sources"><p>PDF context used</p>${payload.sources.map(source=>`<article><strong>Page ${source.page}</strong><span>${escapeHtml(source.text)}</span></article>`).join("")}</div>`:""}</div>`}
+    function renderError(message){qs("answerArea").innerHTML=`<div class="answer-card error"><p class="answer-label">Needs attention</p><h2>AI search is not ready</h2><p class="answer-text">${escapeHtml(message)}</p></div>`}
+    async function ask(value){const trimmed=(value||qs("question").value).trim();if(!trimmed||isThinking)return;qs("question").value=trimmed;setThinking(true);qs("voiceStatus").textContent="Asking the AI from the Cruise Compass...";qs("answerArea").innerHTML='<p class="loading">Reading the best PDF context and asking AI...</p>';try{const response=await fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({question:trimmed})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||"AI request failed.");renderAnswer(trimmed,payload);qs("voiceStatus").textContent="AI answered from the PDF."}catch(error){renderError(error.message||"Something went wrong.");qs("voiceStatus").textContent="The AI answer did not complete."}finally{setThinking(false)}}
+    function startVoice(){const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Recognition){qs("voiceStatus").textContent="Voice search is not available in this browser. Type your question instead.";return}if(isListening){recognition&&recognition.stop();setListening(false);return}recognition=new Recognition();recognition.continuous=false;recognition.interimResults=false;recognition.lang="en-US";recognition.onresult=(event)=>{const transcript=event.results[0]&&event.results[0][0]?event.results[0][0].transcript:"";if(transcript)ask(transcript);qs("voiceStatus").textContent=transcript?"I heard your question.":"I did not catch that. Try again."};recognition.onerror=()=>{qs("voiceStatus").textContent="Voice search stopped. Check microphone permission or type your question.";setListening(false)};recognition.onend=()=>setListening(false);setListening(true);qs("voiceStatus").textContent="Listening now. Ask your cruise question.";recognition.start()}
+    quickQuestions.forEach(item=>{const button=document.createElement("button");button.type="button";button.textContent=item;button.addEventListener("click",()=>ask(item));qs("quickGrid").appendChild(button)});
+    qs("searchForm").addEventListener("submit",event=>{event.preventDefault();ask()});
+    qs("voiceButton").addEventListener("click",startVoice);
+  </script>
+</body>
+</html>
