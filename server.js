@@ -115,7 +115,11 @@ function scoreChunk(chunk, query, terms) {
 
 function topContext(question) {
   const terms = expandTerms(question);
-  const matches = data.chunks
+  const pool = terms.includes("breakfast")
+    ? data.chunks.filter((chunk) => normalizeText(chunk.text).includes("breakfast"))
+    : data.chunks;
+
+  const matches = pool
     .map((chunk) => ({ chunk, score: scoreChunk(chunk, question, terms) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
