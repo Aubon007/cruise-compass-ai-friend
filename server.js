@@ -63,6 +63,17 @@ const intentTerms = {
   fitness: ["fitness", "gym", "spa", "sports", "flowrider", "north star"],
 };
 
+const multilingualIntentHints = {
+  breakfast: ["早餐", "早晨食", "朝早食", "飲茶"],
+  dinner: ["晚餐", "晚飯", "食飯", "餐廳"],
+  show: ["表演", "節目", "劇院", "唱歌", "卡拉ok"],
+  kids: ["小朋友", "兒童", "細路", "家庭"],
+  port: ["港口", "落船", "上岸", "離港", "到港"],
+  casino: ["賭場", "老虎機"],
+  internet: ["上網", "網絡", "無線網絡", "wifi"],
+  fitness: ["健身", "運動", "水療"],
+};
+
 function sendJson(response, status, payload) {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -162,9 +173,15 @@ function tokenize(value) {
 function expandTerms(query) {
   const base = new Set(tokenize(query));
   const lowered = normalizeText(query);
+  const rawLowered = String(query).toLowerCase();
 
   Object.entries(intentTerms).forEach(([intent, terms]) => {
-    if (lowered.includes(intent) || terms.some((term) => lowered.includes(term))) {
+    const languageHints = multilingualIntentHints[intent] || [];
+    if (
+      lowered.includes(intent) ||
+      terms.some((term) => lowered.includes(term)) ||
+      languageHints.some((term) => rawLowered.includes(term))
+    ) {
       terms.forEach((term) => term.split(/\s+/).forEach((word) => base.add(word)));
     }
   });
