@@ -1,4 +1,5 @@
 import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +8,9 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const model = process.env.OPENAI_MODEL || "gpt-5.6-sol";
 const data = JSON.parse(readFileSync(join(root, "cruise-compass-data.json"), "utf8"));
+const sessionCookie = "cc_ai_session";
+const sessionMaxAgeSeconds = 60 * 60 * 24 * 14;
+const sessions = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -65,6 +69,84 @@ function sendJson(response, status, payload) {
     "cache-control": "no-store",
   });
   response.end(JSON.stringify(payload));
+}
+
+function sendRedirect(response, location) {
+  response.writeHead(302, {
+    location,
+    "cache-control": "no-store",
+  });
+  response.end();
+}
+
+function parseCookies(request) {
+  const cookies = {};
+  const header = request.headers.cookie || "";
+  header.split(";").forEach((part) => {
+    const [rawName, ...rawValue] = part.trim().split("=");
+    if (!rawName) return;
+    cookies[rawName] = decodeURIComponent(rawValue.join("=") || "");
+  });
+  return cookies;
+}
+
+function secureCompare(left, right) {
+  const leftHash = createHash("sha256").update(String(left)).digest();
+  const rightHash = createHash("sha256").update(String(right)).digest();
+  return timingSafeEqual(leftHash, rightHash);
+}
+
+function authConfigured() {
+  return Boolean(process.env.AUTH_EMAIL && process.env.AUTH_PIN);
+}
+
+function isAuthenticated(request) {
+  const token = parseCookies(request)[sessionCookie];
+  if (!token) return false;
+  const session = sessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    sessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function sessionCookieHeader(request, token) {
+  const secure = request.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+  return `${sessionCookie}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${sessionMaxAgeSeconds}${secure}`;
+}
+
+function clearSessionCookieHeader() {
+  return `${sessionCookie}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`;
+}
+
+async function handleLogin(request, response) {
+  if (!authConfigured()) {
+    sendJson(response, 503, { error: "Login is not configured on this server." });
+    return;
+  }
+
+  const { email, pin } = await readBody(request);
+  const expectedEmail = String(process.env.AUTH_EMAIL).trim().toLowerCase();
+  const providedEmail = String(email || "").trim().toLowerCase();
+  const providedPin = String(pin || "");
+
+  if (
+    secureCompare(providedEmail, expectedEmail) &&
+    secureCompare(providedPin, process.env.AUTH_PIN)
+  ) {
+    const token = randomBytes(32).toString("hex");
+    sessions.set(token, { expiresAt: Date.now() + sessionMaxAgeSeconds * 1000 });
+    response.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "set-cookie": sessionCookieHeader(request, token),
+    });
+    response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  sendJson(response, 401, { error: "Email or PIN is incorrect." });
 }
 
 function normalizeText(value) {
@@ -225,7 +307,33 @@ function serveFile(request, response) {
 
 const server = createServer(async (request, response) => {
   try {
+    if (request.method === "GET" && request.url === "/api/session") {
+      sendJson(response, 200, { authenticated: isAuthenticated(request) });
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/api/login") {
+      await handleLogin(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/api/logout") {
+      const token = parseCookies(request)[sessionCookie];
+      if (token) sessions.delete(token);
+      response.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+        "set-cookie": clearSessionCookieHeader(),
+      });
+      response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     if (request.method === "POST" && request.url === "/api/ask") {
+      if (!isAuthenticated(request)) {
+        sendJson(response, 401, { error: "Please log in first." });
+        return;
+      }
       const { question } = await readBody(request);
       const trimmed = String(question || "").trim();
       if (!trimmed) {
@@ -237,6 +345,20 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "GET") {
+      const pathname = new URL(request.url, "http://localhost").pathname;
+      if (pathname === "/login") {
+        if (isAuthenticated(request)) {
+          sendRedirect(response, "/");
+          return;
+        }
+        request.url = "/login.html";
+        serveFile(request, response);
+        return;
+      }
+      if (!isAuthenticated(request)) {
+        sendRedirect(response, "/login");
+        return;
+      }
       serveFile(request, response);
       return;
     }

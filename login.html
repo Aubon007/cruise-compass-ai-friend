@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Cruise Compass AI Friend</title>
+  <style>
+    :root{--background:#f3f7f4;--foreground:#17242a;--panel:#fffdf7;--ink-soft:#52636b;--teal:#047d86;--teal-dark:#035d66;--coral:#d65a42;--line:#d9d0c1;--mint:#ddf3e5}*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,rgba(4,125,134,.14),transparent 34%),linear-gradient(315deg,rgba(242,189,75,.2),transparent 34%),var(--background);color:var(--foreground);font-family:Arial,Helvetica,sans-serif}.shell{min-height:100vh;display:grid;place-items:center;padding:24px}.panel{width:min(100%,430px);display:grid;gap:18px;padding:24px;border:1px solid rgba(23,36,42,.14);border-radius:28px;background:color-mix(in srgb,var(--panel) 94%,white);box-shadow:0 24px 80px rgba(23,36,42,.18)}.eyebrow{margin:0;color:var(--teal-dark);font-size:.78rem;font-weight:800;text-transform:uppercase}.chip{display:inline-flex;width:max-content;padding:7px 9px;border-radius:999px;background:var(--mint);color:#245b34;font-size:.78rem;font-weight:800}h1{margin:4px 0 0;font-size:clamp(2.1rem,12vw,3.25rem);line-height:.95}p{margin:0;color:var(--ink-soft);line-height:1.45}.form{display:grid;gap:12px;margin-top:6px}label{display:grid;gap:7px;color:var(--ink-soft);font-size:.86rem;font-weight:800}input{height:50px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--foreground);font:inherit;outline:none}input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(4,125,134,.14)}button{height:50px;border:0;border-radius:8px;background:linear-gradient(150deg,var(--teal),var(--teal-dark));color:white;font:inherit;font-weight:900;cursor:pointer}button:disabled{cursor:wait;opacity:.72}.message{min-height:22px;color:var(--coral);font-weight:700}.foot{padding-top:4px;font-size:.86rem}@media(max-width:460px){.shell{padding:0;place-items:stretch}.panel{min-height:100vh;border:0;border-radius:0;box-shadow:none;align-content:center}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel" aria-label="Login">
+      <div>
+        <p class="eyebrow">Private cruise assistant</p>
+        <h1>Cruise Compass AI Friend</h1>
+      </div>
+      <span class="chip">Login required</span>
+      <p>Enter the approved account email and PIN to use the AI search.</p>
+      <form id="loginForm" class="form">
+        <label>
+          Email
+          <input id="email" name="email" type="email" autocomplete="username" required />
+        </label>
+        <label>
+          PIN
+          <input id="pin" name="pin" type="password" autocomplete="current-password" required />
+        </label>
+        <button id="loginButton" type="submit">Log in</button>
+        <p id="message" class="message" aria-live="polite"></p>
+      </form>
+      <p class="foot">This page protects the cruise PDF assistant and AI answer endpoint.</p>
+    </section>
+  </main>
+  <script>
+    const form=document.getElementById("loginForm");
+    const button=document.getElementById("loginButton");
+    const message=document.getElementById("message");
+    form.addEventListener("submit",async(event)=>{
+      event.preventDefault();
+      button.disabled=true;
+      message.textContent="";
+      try{
+        const response=await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:document.getElementById("email").value,pin:document.getElementById("pin").value})});
+        const payload=await response.json();
+        if(!response.ok)throw new Error(payload.error||"Login failed.");
+        location.href="/";
+      }catch(error){
+        message.textContent=error.message||"Login failed.";
+      }finally{
+        button.disabled=false;
+      }
+    });
+  </script>
+</body>
+</html>

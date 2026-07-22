@@ -6,6 +6,7 @@ AI-powered voice question answering for the Odyssey of the Seas 7-night Greek Is
 
 - Uses a server-side OpenAI API call instead of plain browser text search.
 - Keeps `OPENAI_API_KEY` private on Render as an environment variable.
+- Requires login before the site or AI endpoint can be used.
 - Answers from the OCR-read PDF context and returns page references.
 
 ## Render settings
@@ -14,6 +15,8 @@ AI-powered voice question answering for the Odyssey of the Seas 7-night Greek Is
 - Build command: `npm install`
 - Start command: `npm start`
 - Environment variable: `OPENAI_API_KEY`
+- Environment variable: `AUTH_EMAIL`
+- Environment variable: `AUTH_PIN`
 - Optional environment variable: `OPENAI_MODEL`
 
 The default model is `gpt-5.6-sol`, based on the current OpenAI model resolver available in this Codex workspace.
