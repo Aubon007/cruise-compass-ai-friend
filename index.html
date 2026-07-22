@@ -31,8 +31,8 @@
         <div class="language-row">
           <label for="voiceLanguage">Voice language</label>
           <select id="voiceLanguage">
-            <option value="zh-HK">Cantonese / 廣東話</option>
             <option value="en-US">English</option>
+            <option value="zh-HK">Cantonese / 廣東話</option>
             <option value="zh-CN">Mandarin / 普通話</option>
           </select>
         </div>
@@ -63,7 +63,7 @@
     function renderAnswer(question,payload){qs("answerArea").innerHTML=`<div class="answer-card"><p class="answer-label">AI answer from the PDF</p><h2>${escapeHtml(question)}</h2><p class="answer-text">${escapeHtml(payload.answer||"I could not find that in the Cruise Compass.")}</p>${payload.sources&&payload.sources.length?`<div class="sources"><p>PDF context used</p>${payload.sources.map(source=>`<article><strong>Page ${source.page}</strong><span>${escapeHtml(source.text)}</span></article>`).join("")}</div>`:""}</div>`}
     function renderError(message){qs("answerArea").innerHTML=`<div class="answer-card error"><p class="answer-label">Needs attention</p><h2>AI search is not ready</h2><p class="answer-text">${escapeHtml(message)}</p></div>`}
     async function ask(value){const trimmed=(value||qs("question").value).trim();if(!trimmed||isThinking)return;qs("question").value=trimmed;setThinking(true);qs("voiceStatus").textContent="Asking the AI from the Cruise Compass...";qs("answerArea").innerHTML='<p class="loading">Reading the best PDF context and asking AI...</p>';try{const response=await fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({question:trimmed})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||"AI request failed.");renderAnswer(trimmed,payload);qs("voiceStatus").textContent="AI answered from the PDF."}catch(error){renderError(error.message||"Something went wrong.");qs("voiceStatus").textContent="The AI answer did not complete."}finally{setThinking(false)}}
-    function selectedVoiceLanguage(){return qs("voiceLanguage").value||"zh-HK"}
+    function selectedVoiceLanguage(){return qs("voiceLanguage").value||"en-US"}
     function startVoice(){const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Recognition){qs("voiceStatus").textContent="Voice search is not available in this browser. Type your question instead.";return}if(isListening){recognition&&recognition.stop();setListening(false);return}recognition=new Recognition();recognition.continuous=false;recognition.interimResults=false;recognition.lang=selectedVoiceLanguage();recognition.onresult=(event)=>{const transcript=event.results[0]&&event.results[0][0]?event.results[0][0].transcript:"";if(transcript)ask(transcript);qs("voiceStatus").textContent=transcript?"I heard your question.":"I did not catch that. Try again."};recognition.onerror=()=>{qs("voiceStatus").textContent="Voice search stopped. Check microphone permission or type your question.";setListening(false)};recognition.onend=()=>setListening(false);setListening(true);qs("voiceStatus").textContent=`Listening now in ${qs("voiceLanguage").selectedOptions[0].textContent}.`;recognition.start()}
     quickQuestions.forEach(item=>{const button=document.createElement("button");button.type="button";button.textContent=item;button.addEventListener("click",()=>ask(item));qs("quickGrid").appendChild(button)});
     qs("searchForm").addEventListener("submit",event=>{event.preventDefault();ask()});
