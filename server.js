@@ -8,6 +8,22 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const model = process.env.OPENAI_MODEL || "gpt-5.6-sol";
 const data = JSON.parse(readFileSync(join(root, "cruise-compass-data.json"), "utf8"));
+const itineraryPath = join(root, "travel-itinerary-data.json");
+const itineraryData = existsSync(itineraryPath)
+  ? JSON.parse(readFileSync(itineraryPath, "utf8"))
+  : { chunks: [] };
+const searchChunks = [
+  ...data.chunks.map((chunk) => ({
+    ...chunk,
+    sourceType: "pdf",
+    label: `PDF page ${chunk.page}`,
+  })),
+  ...itineraryData.chunks.map((chunk) => ({
+    ...chunk,
+    sourceType: "itinerary",
+    label: chunk.label || chunk.page || "Travel itinerary",
+  })),
+];
 const sessionCookie = "cc_ai_session";
 const sessionMaxAgeSeconds = 60 * 60 * 24 * 14;
 const sessions = new Map();
@@ -61,6 +77,13 @@ const intentTerms = {
   casino: ["casino", "slots", "tables", "royale"],
   internet: ["voom", "internet", "wifi", "starlink"],
   fitness: ["fitness", "gym", "spa", "sports", "flowrider", "north star"],
+  itinerary: ["itinerary", "travel", "flight", "airport", "hotel", "tour", "train", "coach"],
+  rome: ["rome", "roma", "fiumicino", "fco", "termini", "leonardo", "vatican", "peter"],
+  amalfi: ["amalfi", "positano", "coast"],
+  santorini: ["santorini", "oia", "fira", "tender", "cable", "taxi"],
+  ephesus: ["kusadasi", "turkey", "ephesus", "celsus", "theatre", "roman"],
+  mykonos: ["mykonos", "chora", "venice", "paraportiani", "windmills"],
+  naples: ["naples", "pompeii", "pizza", "neapolitan"],
 };
 
 const multilingualIntentHints = {
@@ -72,6 +95,24 @@ const multilingualIntentHints = {
   casino: ["賭場", "老虎機"],
   internet: ["上網", "網絡", "無線網絡", "wifi"],
   fitness: ["健身", "運動", "水療"],
+};
+
+const extraMultilingualIntentHints = {
+  breakfast: ["\u65e9\u9910", "\u65e9\u6668\u98df", "\u671d\u65e9\u98df", "\u98f2\u8336"],
+  dinner: ["\u665a\u9910", "\u665a\u98ef", "\u98df\u98ef", "\u9910\u5ef3"],
+  show: ["\u8868\u6f14", "\u7bc0\u76ee", "\u5287\u9662", "\u5531\u6b4c", "\u5361\u62c9ok"],
+  kids: ["\u5c0f\u670b\u53cb", "\u5152\u7ae5", "\u7d30\u8def", "\u5bb6\u5ead"],
+  port: ["\u6e2f\u53e3", "\u843d\u8239", "\u4e0a\u5cb8", "\u96e2\u6e2f", "\u5230\u6e2f"],
+  casino: ["\u8ced\u5834", "\u8001\u864e\u6a5f"],
+  internet: ["\u4e0a\u7db2", "\u7db2\u7d61", "\u7121\u7dda\u7db2\u7d61", "wifi"],
+  fitness: ["\u5065\u8eab", "\u904b\u52d5", "\u6c34\u7642"],
+  itinerary: ["\u884c\u7a0b", "\u65c5\u884c", "\u65c5\u7a0b", "\u9152\u5e97", "\u6a5f\u5834", "\u706b\u8eca", "\u65c5\u884c\u5718"],
+  rome: ["\u7f85\u99ac", "\u68b5\u8482\u5ca1", "\u8056\u5f7c\u5f97", "\u6a5f\u5834"],
+  amalfi: ["\u963f\u746a\u83f2", "\u6ce2\u897f\u5854\u8afe"],
+  santorini: ["\u8056\u6258\u91cc\u5c3c", "\u8056\u5cf6", "\u4f0a\u4e9e", "\u8cbb\u62c9", "\u7e9c\u8eca", "\u63a5\u99c1\u8239"],
+  ephesus: ["\u4ee5\u5f17\u6240", "\u5eab\u85a9\u9054\u65af", "\u571f\u8033\u5176"],
+  mykonos: ["\u7c73\u514b\u8afe\u65af", "\u5c0f\u5a01\u5c3c\u65af", "\u98a8\u8eca"],
+  naples: ["\u62ff\u5761\u91cc", "\u90a3\u4e0d\u52d2\u65af", "\u9f90\u8c9d", "\u8584\u9905", "\u62ab\u85a9"],
 };
 
 function sendJson(response, status, payload) {
@@ -176,7 +217,10 @@ function expandTerms(query) {
   const rawLowered = String(query).toLowerCase();
 
   Object.entries(intentTerms).forEach(([intent, terms]) => {
-    const languageHints = multilingualIntentHints[intent] || [];
+    const languageHints = [
+      ...(multilingualIntentHints[intent] || []),
+      ...(extraMultilingualIntentHints[intent] || []),
+    ];
     if (
       lowered.includes(intent) ||
       terms.some((term) => lowered.includes(term)) ||
@@ -215,8 +259,8 @@ function scoreChunk(chunk, query, terms) {
 function topContext(question) {
   const terms = expandTerms(question);
   const pool = terms.includes("breakfast")
-    ? data.chunks.filter((chunk) => normalizeText(chunk.text).includes("breakfast"))
-    : data.chunks;
+    ? searchChunks.filter((chunk) => normalizeText(chunk.text).includes("breakfast"))
+    : searchChunks;
 
   const matches = pool
     .map((chunk) => ({ chunk, score: scoreChunk(chunk, question, terms) }))
@@ -225,7 +269,7 @@ function topContext(question) {
     .slice(0, 8)
     .map((item) => item.chunk);
 
-  return matches.length ? matches : data.chunks.slice(0, 5);
+  return matches.length ? matches : searchChunks.slice(0, 5);
 }
 
 function responseText(payload) {
@@ -379,19 +423,19 @@ async function askOpenAI(question) {
 
   const sources = topContext(question);
   const context = sources
-    .map((source) => `PDF_PAGE_${source.page}\n${source.text}`)
+    .map((source) => `${source.label}\n${source.text}`)
     .join("\n\n");
 
   const prompt = [
-    "You are a helpful cruise companion for a passenger using the Odyssey of the Seas Cruise Compass.",
-    "Answer only from the provided OCR context. If the context is unclear or missing, say you could not find that in the Cruise Compass.",
+    "You are a helpful travel companion for a passenger using the Odyssey of the Seas Cruise Compass and a Mediterranean vacation itinerary.",
+    "Answer only from the provided context. If the context is unclear or missing, say you could not find that in the available trip information.",
     "Keep answers short, practical, and phone-friendly.",
     "Answer in the same language as the question when possible. For Cantonese questions, answer in Traditional Chinese.",
-    "Cite only PDF page labels that appear in the context, such as (PDF page 4). Never treat deck numbers, venue numbers, or times as page numbers.",
+    "Cite only source labels that appear in the context, such as (PDF page 4) or (Travel itinerary - September 15, 2026). Never treat deck numbers, venue numbers, or times as page numbers.",
     "",
     `Question: ${question}`,
     "",
-    "OCR context:",
+    "Available trip context:",
     context,
   ].join("\n");
 
@@ -418,6 +462,7 @@ async function askOpenAI(question) {
     answer: responseText(payload) || "I could not find that in the Cruise Compass.",
     sources: sources.slice(0, 4).map((source) => ({
       page: source.page,
+      label: source.label,
       text: source.text.slice(0, 420),
     })),
     model,

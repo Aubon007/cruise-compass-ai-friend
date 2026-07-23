@@ -7,7 +7,7 @@ AI-powered voice question answering for the Odyssey of the Seas 7-night Greek Is
 - Uses a server-side OpenAI API call instead of plain browser text search.
 - Keeps `OPENAI_API_KEY` private on Render as an environment variable.
 - Requires login before the site or AI endpoint can be used.
-- Answers from the OCR-read PDF context and returns page references.
+- Answers from the OCR-read PDF context and the travel itinerary, returning source references.
 
 ## Render settings
 
