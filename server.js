@@ -236,6 +236,32 @@ function expandTerms(query) {
 function scoreChunk(chunk, query, terms) {
   const text = normalizeText(chunk.text);
   const compactQuery = normalizeText(query).trim();
+  const asksItinerary = terms.some((term) =>
+    [
+      "itinerary",
+      "travel",
+      "flight",
+      "airport",
+      "hotel",
+      "tour",
+      "train",
+      "coach",
+      "rome",
+      "amalfi",
+      "positano",
+      "santorini",
+      "oia",
+      "fira",
+      "kusadasi",
+      "turkey",
+      "ephesus",
+      "mykonos",
+      "naples",
+      "pompeii",
+      "september",
+      "2026",
+    ].includes(term)
+  );
   let score = 0;
 
   terms.forEach((term) => {
@@ -252,13 +278,43 @@ function scoreChunk(chunk, query, terms) {
     score += 5;
   }
   if (text.includes("deck") && terms.some((term) => ["where", "show", "dining", "casino"].includes(term))) score += 2;
+  if (chunk.sourceType === "itinerary" && asksItinerary) score += 25;
+  if (chunk.sourceType === "itinerary" && /\bseptember\b/.test(text) && /\bseptember\b/.test(compactQuery)) score += 18;
 
   return score;
 }
 
 function topContext(question) {
   const terms = expandTerms(question);
-  const pool = terms.includes("breakfast")
+  const asksItinerary = terms.some((term) =>
+    [
+      "itinerary",
+      "travel",
+      "flight",
+      "airport",
+      "hotel",
+      "tour",
+      "train",
+      "coach",
+      "rome",
+      "amalfi",
+      "positano",
+      "santorini",
+      "oia",
+      "fira",
+      "kusadasi",
+      "turkey",
+      "ephesus",
+      "mykonos",
+      "naples",
+      "pompeii",
+      "september",
+      "2026",
+    ].includes(term)
+  );
+  const pool = asksItinerary
+    ? searchChunks.filter((chunk) => chunk.sourceType === "itinerary")
+    : terms.includes("breakfast")
     ? searchChunks.filter((chunk) => normalizeText(chunk.text).includes("breakfast"))
     : searchChunks;
 
